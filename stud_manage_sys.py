@@ -1,8 +1,8 @@
 import mysql.connector
 from datetime import datetime
 
+# Database creation block
 try:
-    # Database creation block
     mydb = mysql.connector.connect(
         host="localhost",
         user="root",
@@ -46,7 +46,6 @@ class DatabaseConnection:
                                 course_id VARCHAR(50) PRIMARY KEY,
                                 course_name VARCHAR(255))''')
 
-        # Remove student_name foreign key in classes table
         self.cursor.execute('''CREATE TABLE IF NOT EXISTS classes (
                                 class_name VARCHAR(50) UNIQUE,
                                 student_id INT,
@@ -65,7 +64,6 @@ class DatabaseConnection:
                                 given_date DATE,
                                 submission_date DATE,
                                 total_marks INT,
-                                PRIMARY KEY (class_name, activity_name),
                                 FOREIGN KEY (class_name) REFERENCES classes(class_name))''')
         
     def execute_query(self, query, params=None):
@@ -223,22 +221,18 @@ def mark_attendance(db, assigned_class):
 def assign_activity(db, assigned_class):
     activity_name = input("Enter Activity Name: ")
     try:
-        given_date_str = input("Enter the Given date of activity in (DD-MM-YYYY): ")
+        given_date_str = input("Enter the Given Date (DD-MM-YYYY): ")
         given_date = datetime.strptime(given_date_str, "%d-%m-%Y").date()
-    except ValueError:
-        print("Incorrect date format. Please enter in DD-MM-YYYY format.")
-        return
-    try:
-        submission_date_str = input("Enter Submission date of activity in (DD-MM-YYYY): ")
+        submission_date_str = input("Enter Submission Date (DD-MM-YYYY): ")
         submission_date = datetime.strptime(submission_date_str, "%d-%m-%Y").date()
     except ValueError:
-        print("Incorrect date format. Please enter in DD-MM-YYYY format.")
+        print("Incorrect date format. Use DD-MM-YYYY.")
         return
-    
     total_marks = int(input("Enter Total Marks: "))
     query = "INSERT INTO activities (class_name, activity_name, given_date, submission_date, total_marks) VALUES (%s, %s, %s, %s, %s)"
     db.execute_query(query, (assigned_class, activity_name, given_date, submission_date, total_marks))
-    print("Activity assigned to class", assigned_class)
+    print("Activity assigned to class.")
+
 
 # Student functionalities
 def view_attendance(db, student_id):
@@ -251,21 +245,16 @@ def view_attendance(db, student_id):
         print("No attendance record found for this student.")
 
 def view_activities(db, student_id):
-    query_class = "SELECT class FROM students WHERE student_id = %s"
-    class_result = db.fetch_all(query_class, (student_id,))
-
-    if class_result:
-        student_class = class_result[0][0]
+    query = "SELECT class FROM students WHERE student_id=%s"
+    result = db.fetch_all(query, (student_id,))
+    if result:
+        student_class = result[0][0]
         query_activities = "SELECT activity_name, given_date, submission_date, total_marks FROM activities WHERE class_name=%s"
         activities = db.fetch_all(query_activities, (student_class,))
         if activities:
-            print(f"Activities for Class {student_class}:")
+            print(f"\nActivities for Class {student_class}:")
             for activity in activities:
-                activity_name, given_date, submission_date, total_marks = activity
-                print(f"\nActivity Name: {activity_name}")
-                print(f"Date Given: {given_date}")
-                print(f"Submission Date: {submission_date}")
-                print(f"Total Marks: {total_marks}")
+                print(f"Activity: {activity[0]}, Given Date: {activity[1]}, Submission Date: {activity[2]}, Total Marks: {activity[3]}")
         else:
             print(f"No activities found for Class {student_class}.")
     else:
@@ -339,6 +328,7 @@ def main():
             password = input("Enter Faculty Password: ")
             faculty = db.fetch_all("SELECT * FROM faculty WHERE username=%s AND password=%s", (username, password))
             if faculty:
+                assigned_class = faculty[0][5]
                 print(f"\nWelcome, {faculty[0][1]}")
                 while True:
                     print("\nFaculty Menu")
@@ -350,7 +340,7 @@ def main():
                     print("6. Logout")
                     choice = input("Choose an option: ")
                     if choice == '1':
-                        view_class_profile(db, faculty[0][4])
+                        view_class_profile(db, assigned_class)
                     elif choice == '2':
                         update_student(db)
                     elif choice == '3':
@@ -358,7 +348,7 @@ def main():
                     elif choice == '4':
                         mark_attendance(db, faculty[0][4])
                     elif choice == '5':
-                        assign_activity(db, faculty[0][4])
+                        assign_activity(db, assigned_class)
                     elif choice == '6':
                         break
                     else:
