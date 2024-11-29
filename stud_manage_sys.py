@@ -9,7 +9,7 @@ try:
         password="root"
     )
     cursor = mydb.cursor()
-    cursor.execute("CREATE DATABASE IF NOT EXISTS stdmngsys4")
+    cursor.execute("CREATE DATABASE IF NOT EXISTS stdmngsys_project")
     print("Database created or exists.")
 except mysql.connector.Error as e:
     print("Database error:", e)
@@ -20,7 +20,7 @@ class DatabaseConnection:
             host='localhost',
             user='root',
             password='root',
-            database='stdmngsys4'
+            database='stdmngsys_project'
         )
         self.cursor = self.conn.cursor()
         self.create_tables()
